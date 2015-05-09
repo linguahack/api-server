@@ -2,11 +2,14 @@
 var async = require('async');
 var models = require('./models');
 
-models.connect('testing');
+models.connect('development');
 
 module.exports =  {
   serials: function(req, res) {
-    models.Serial.find({}, 'url name image_url fsto.image_url imdb.image_url tmdb', function(err, docs) {
+    models.Serial
+    .find({}, 'url name image_url fsto.image_url imdb.image_url tmdb')
+    .exec()
+    .then(function(docs) {
       var result = docs.map(function(i) {
         return i.toObject({
           virtuals: true
@@ -17,9 +20,12 @@ module.exports =  {
   },
 
   serial: function(req, res, next) {
-    models.Serial.findOne({
+    models.Serial
+    .findOne({
       url: req.params.serial
-    }).exec(function(err, serial) {
+    })
+    .exec()
+    .then(function(serial) {
       res.json(serial.toObject({
         virtuals: true,
         transform: true

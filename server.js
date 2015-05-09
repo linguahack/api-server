@@ -1,6 +1,4 @@
 
-require('coffee-script/register');
-
 var express = require('express');
 var cors = require('express-cors');
 var controllers = require('./backend/controllers');
