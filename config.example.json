@@ -1,0 +1,4 @@
+{
+    "mongo_url" : "<mongo url>",
+    "testing_mongo_url" : "<mongo url>"
+}
