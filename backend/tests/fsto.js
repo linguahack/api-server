@@ -32,7 +32,6 @@ describe.only('fsto', function() {
 
   describe('full url', function() {
     it('should save url and id', function() {
-      console.log("we are here")
       serial.fsto.full_url = fs_url;
       assert.typeOf(serial.fsto.url, 'string');
       assert.typeOf(serial.fsto.id, 'string');

@@ -1,5 +1,5 @@
 
-var async = require('async');
+var Promise = require('promise');
 var models = require('./models');
 
 models.connect('development');
@@ -19,7 +19,7 @@ module.exports =  {
     });
   },
 
-  serial: function(req, res, next) {
+  serial: function(req, res) {
     models.Serial
     .findOne({
       url: req.params.serial
@@ -33,23 +33,20 @@ module.exports =  {
     });
   },
 
-  fs_update_links: function(req, res, next) {
-    models.Serial.find({}, function(err, docs) {
-      if (err != null) {
-        res.json({
-          error: err != null
-        });
-        return;
-      }
-      async.each(docs, function(serial, cb) {
-        serial.fs_update_links(function() {
-          serial.save(cb);
-        });
-      }, function(err) {
-        res.json({
-          error: err != null
-        });
-      });
+  fs_update_links: function(req, res) {
+    models.Serial
+    .find({})
+    .exec()
+    .then(function(docs) {
+      return Promise.all(docs.map(function(serial) {
+        serial.fs_update_links()
+        .then(function(){
+          return serial.save();
+        })
+      }));
+    })
+    .then(function() {
+      res.json({error: false});
     });
   }
 };
