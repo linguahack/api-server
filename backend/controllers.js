@@ -5,8 +5,8 @@ var models = require('./models');
 models.connect('development');
 
 module.exports =  {
-  serials: function(req, res) {
-    models.Serial
+  getSerials: function() {
+    return models.Serial
     .find({}, 'url name image_url fsto.image_url imdb.image_url tmdb')
     .exec()
     .then(function(docs) {
@@ -15,26 +15,30 @@ module.exports =  {
           virtuals: true
         });
       });
-      res.json(result);
+      return result;
     });
   },
 
-  serial: function(req, res) {
-    models.Serial
+  getSerial: function(url) {
+    return models.Serial
     .findOne({
-      url: req.params.serial
+      url: url
     })
     .exec()
     .then(function(serial) {
-      res.json(serial.toObject({
+      return serial.toObject({
         virtuals: true,
         transform: true
-      }));
+      });
     });
   },
 
-  fs_update_links: function(req, res) {
-    models.Serial
+  editOrCreateSerial: function(serial) {
+    return Promise.resolve(serial.url || 'breaking_bad');
+  },
+
+  fsUpdateLinks: function() {
+    return models.Serial
     .find({})
     .exec()
     .then(function(docs) {
@@ -44,9 +48,6 @@ module.exports =  {
           return serial.save();
         })
       }));
-    })
-    .then(function() {
-      res.json({error: false});
     });
   }
 };
