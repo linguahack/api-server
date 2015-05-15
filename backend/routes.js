@@ -8,25 +8,24 @@ var app = express();
 
 app.use(bodyParser.urlencoded({extended: true}));
 
-
-var errorHandler = function(response) {
-  return function(err) {
+var handle = function(promise, response) {
+  promise.then(response.json.bind(response), function(err) {
     console.log(err.stack);
-    response.json({error: true});
-  };
+    response.json({error: err.stack.toString()});
+  });
 }
 
 app.get('/serials', function(req, res) {
-  controllers.getSerials()
-  .then(res.json.bind(res), errorHandler(res));
+  var result = controllers.getSerials()
+  handle(result, res);
 })
 
 app.get('/serial/(:serial)', function(req, res) {
-  controllers.getSerial(req.params.serial)
-  .then(res.json.bind(res), errorHandler(res));
+  var result = controllers.getSerial(req.params.serial)
+  handle(result, res);
 });
 app.post('/serial', function(req, res) {
-  Promise.resolve()
+  var result = Promise.resolve()
   .then(function() {
     console.log(req.body.serial);
     return JSON.parse(req.body.serial);
@@ -37,14 +36,23 @@ app.post('/serial', function(req, res) {
   .then(function(serialId) {
     return controllers.getSerial(serialId);
   })
-  .then(res.json.bind(res), errorHandler(res));
+  handle(result, res);
 });
 
 app.get('/fs_update_links', function(req, res) {
-  controllers.fsUpdateLinks()
+  var result = controllers.fsUpdateLinks()
   .then(function() {
-    res.json({error: false});
+    return {error: false};
   })
+  handle(result, res);
+});
+
+app.get('/fs_update_links/(:serial)', function(req, res) {
+  var result = controllers.fsUpdateLinksSerial(req.params.serial)
+  .then(function() {
+    return {error: false};
+  })
+  handle(result, res);
 });
 
 module.exports = app;

@@ -126,7 +126,7 @@ this.append_to_schemas = function(schemas) {
     });
   };
 
-  schemas.fsto_file_schema.methods.get_link = function() {
+  var get_link = schemas.fsto_file_schema.methods.get_link = function() {
     if ((this.last_updated) && new Date - this.last_updated < 60000) {
       return Promise.resolve();
     }
@@ -144,8 +144,10 @@ this.append_to_schemas = function(schemas) {
       for (j = 0; j < season.episodes.length; j++) {
         episode = season.episodes[j];
         for (k = 0; k < episode.fsto.files.length; k++) {
-          file = episode.fsto.files[k]
-          promise = promise.then(file.get_link());
+          file = episode.fsto.files[k];
+          console.log(file);
+          throw new Error();
+          promise = promise.then(get_link.bind(file)());
         }
       }
     }

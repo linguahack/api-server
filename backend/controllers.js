@@ -49,5 +49,17 @@ module.exports =  {
         })
       }));
     });
+  },
+
+  fsUpdateLinksSerial: function(serialUrl) {
+    return models.Serial
+    .findOne({url: serialUrl})
+    .exec()
+    .then(function(serial) {
+      return serial.fs_update_links()
+      .then(function() {
+        return serial.save();
+      });
+    });
   }
 };

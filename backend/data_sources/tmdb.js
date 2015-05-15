@@ -2,10 +2,6 @@
 (function() {
   var api_key, async, base_url, request;
 
-  async = require('async');
-
-  request = require('request');
-
   module.exports = this;
 
   api_key = "38822628893b580eec3f6df039b687ed";
