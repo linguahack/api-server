@@ -41,6 +41,6 @@ fsto.get_link = function(params) {
         file[0].last_updated = new Date;
       }
     }
-  }.bind(this));
+  });
 };
 

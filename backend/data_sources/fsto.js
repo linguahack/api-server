@@ -145,9 +145,7 @@ this.append_to_schemas = function(schemas) {
         episode = season.episodes[j];
         for (k = 0; k < episode.fsto.files.length; k++) {
           file = episode.fsto.files[k];
-          console.log(file);
-          throw new Error();
-          promise = promise.then(get_link.bind(file)());
+          promise = promise.then(get_link.bind(file));
         }
       }
     }
