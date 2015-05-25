@@ -125,34 +125,35 @@ var Fsto = {
   },
 
   getLink: function(file) {
-    if ((this.last_updated) && new Date - this.last_updated < 60000) {
+    if ((file.last_updated) && new Date - file.last_updated < 60000) {
       return Promise.resolve();
     }
     return fsto_common.get_link({
-      fs_file: this,
-      serial: this.ownerDocument(),
-      season: this.parent().parent()
+      fs_file: file,
+      serial: file.ownerDocument(),
+      season: file.parent().parent()
     });
-  };
+  },
 
-  schemas.serial_schema.methods.fs_update_links = function() {
+  updateLinks: function(serial) {
     var i, j, k, season, episode, file, promise = Promise.resolve();
-    for (i = 0; i < this.seasons.length; i++) {
+    for (i = 0; i < serial.seasons.length; i++) {
       season = this.seasons[i];
       for (j = 0; j < season.episodes.length; j++) {
         episode = season.episodes[j];
         for (k = 0; k < episode.fsto.files.length; k++) {
           file = episode.fsto.files[k];
-          promise = promise.then(get_link.bind(file));
+          promise = promise.then(get_link.bind(null, file));
         }
       }
     }
     return promise;
-  };
+  },
 
 
-  schemas.serial_schema.statics.fs_serial_from_url = function(url) {
-    var serial = new this;
+  serialFromUrl: function(url, model) {
+    //TODO: this function
+    var serial = new model;
     serial.fsto.full_url = url;
     var promise = serial
     .fs_get_name_and_image()
@@ -172,12 +173,12 @@ var Fsto = {
     })
     .then(serial.save.bind(serial));
     return promise;
-  };
+  },
 
-  schemas.serial_schema.statics.fs_serial_from_urls = function(urls) {
+  serialFromUrls = function(urls, model) {
     var promises = urls.map(function(url) {
-      return this.fs_serial_from_url(url);
-    }.bind(this));
+      return Fsto.serialFromUrl(url, model);
+    });
     return Promise.all(promises);
   };
 };
