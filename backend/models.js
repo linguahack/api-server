@@ -1,27 +1,16 @@
 
 var mongoose = require('mongoose');
 var config = require('./get_config');
-var fsto = require('./data_sources/fsto');
-var imdb = require('./data_sources/imdb');
-var tmdb = require('./data_sources/tmdb');
 
 module.exports = this;
 
-this.connect = function(purpose) {
-  var hash;
-  if (purpose == null) {
-    purpose = "development";
-  }
-  hash = {
-    development: "mongo_url",
-    testing: "testing_mongo_url"
-  };
+this.connect = function(url) {
   mongoose.disconnect(function() {
-    mongoose.connect(config(hash[purpose]));
+    mongoose.connect(url || config("mongo_url"));
   });
 };
 
-this.connect('testing');
+this.connect();
 
 this.fsto_file_schema = new mongoose.Schema({
   file_id: Number,
@@ -137,11 +126,5 @@ this.serial_schema.set('toObject', {
   virtuals: true,
   transform: true
 });
-
-fsto.append_to_schemas(this);
-
-imdb.append_to_schemas(this);
-
-tmdb.append_to_schemas(this);
 
 this.Serial = mongoose.model('Serial', this.serial_schema);

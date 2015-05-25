@@ -2,7 +2,7 @@
 var Promise = require('promise');
 var models = require('./models');
 
-models.connect('development');
+models.connect();
 
 module.exports =  {
   getSerials: function() {

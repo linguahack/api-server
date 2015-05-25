@@ -3,44 +3,44 @@ var cheerio = require('cheerio');
 var request = require('request-promise');
 var Promise = require('promise');
 var fsto_common = require('../common/fsto');
-module.exports = this;
 
-this.append_to_schemas = function(schemas) {
 
-  schemas.serial_schema.virtual("fsto.player_url").get(function() {
-    return "http://fs.to/video/serials/view/" + this.fsto.id;
-  });
+var Fsto = {
 
-  schemas.serial_schema.virtual("fsto.full_url").get(function() {
-    return "http://fs.to/video/serials/" + this.fsto.id + "-" + this.fsto.url + ".html";
-  });
+  getPlayerUrl: function(serial) {
+    return "http://fs.to/video/serials/view/" + serial.fsto.id;
+  },
 
-  schemas.serial_schema.virtual("fsto.full_url").set(function(url) {
+  getFullUrl: function(serial) {
+    return "http://fs.to/video/serials/" + serial.fsto.id + "-" + serial.fsto.url + ".html";
+  },
+
+  setFullUrl: function(serial, url) {
     var regex;
     regex = /serials\/([\da-zA-Z]*)-(.*)\.html/.exec(url);
-    this.fsto.id = regex[1];
-    this.fsto.url = regex[2];
-  });
+    serial.fsto.id = regex[1];
+    serial.fsto.url = regex[2];
+  },
 
-  schemas.serial_schema.methods.fs_get_name_and_image = function() {
+  getNameAndImage: function(serial) {
     return request({
-      url: this.fsto.full_url
+      url: Fsto.getFullUrl(serial)
     })
     .then(function(body) {
       var $ = cheerio.load(body);
-      this.fsto.name = ($('div.b-tab-item__title-origin')).html();
-      this.fsto.image_url = ($('.poster-main img')).attr('src');
-    }.bind(this));
-  };
+      serial.fsto.name = ($('div.b-tab-item__title-origin')).html();
+      serial.fsto.image_url = ($('.poster-main img')).attr('src');
+    });
+  },
 
-  schemas.serial_schema.methods.fs_common_query_string_params = function(folder_id) {
+  commonQueryParams: function(serial, folder_id) {
     if (folder_id == null) {
       folder_id = 0;
     }
     return {
       ajax: 1,
       r: Math.random(),
-      id: this.fsto.id,
+      id: serial.fsto.id,
       download: 1,
       view: 1,
       view_embed: 0,
@@ -50,13 +50,12 @@ this.append_to_schemas = function(schemas) {
       folder_translate: null,
       folder: folder_id
     };
-  };
+  },
 
-  schemas.serial_schema.methods.fs_get_seasons = function() {
-    var serial = this;
+  getSeasons: function(serial) {
     return request({
-      url: this.fsto.full_url,
-      qs: this.fs_common_query_string_params()
+      url: Fsto.getFullUrl(serial),
+      qs: Fsto.commonQueryParams(serial)
     })
     .then(function(body) {
       var $ = cheerio.load(body);
@@ -75,12 +74,12 @@ this.append_to_schemas = function(schemas) {
         }
       });
     });
-  };
+  },
 
-  schemas.season_schema.methods.fs_get_translation = function() {
+  getTranslation: function(season) {
     return request({
-      url: this.parent().fsto.full_url,
-      qs: this.parent().fs_common_query_string_params(this.fsto.folder_id)
+      url: Fsto.getFullUrl(season.parent()),
+      qs: Fsto.commonQueryParams(season.parent(), season.fsto.folder_id)
     })
     .then(function(body) {
       var $, elem, elem_id, link_name_regex, _ref;
@@ -90,17 +89,16 @@ this.append_to_schemas = function(schemas) {
       elem = $('li.folder a.link-subtype.m-en');
       elem_id = (_ref = link_name_regex.exec(elem.attr('name'))) != null ? _ref[1] : void 0;
       if (elem_id == null) {
-        throw new Error('cannot parse body' + this.parent().name + this.number);
+        throw new Error('cannot parse body' + season.parent().name + season.number);
       }
-      this.fsto.en_folder_id = elem_id;
-    }.bind(this));
-  };
+      season.fsto.en_folder_id = elem_id;
+    });
+  },
 
-  schemas.season_schema.methods.fs_get_episodes = function() {
-    var season = this;
+  getEpisodes: function(season) {
     return request({
-      url: this.parent().fsto.full_url,
-      qs: this.parent().fs_common_query_string_params(this.fsto.en_folder_id)
+      url: Fsto.getFullUrl(season.parent()),
+      qs: Fsto.commonQueryParams(season.parent(), season.fsto.en_folder_id)
     })
     .then(function(body) {
       var file_id_from_link_regex = /file=(\d+)/;
@@ -124,9 +122,9 @@ this.append_to_schemas = function(schemas) {
         });
       }
     });
-  };
+  },
 
-  var get_link = schemas.fsto_file_schema.methods.get_link = function() {
+  getLink: function(file) {
     if ((this.last_updated) && new Date - this.last_updated < 60000) {
       return Promise.resolve();
     }
