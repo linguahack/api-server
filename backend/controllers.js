@@ -2,6 +2,8 @@
 var Promise = require('promise');
 var models = require('./models');
 
+var Fsto = require('./data_sources/fsto');
+
 models.connect();
 
 module.exports =  {
@@ -43,7 +45,7 @@ module.exports =  {
     .exec()
     .then(function(docs) {
       return Promise.all(docs.map(function(serial) {
-        serial.fs_update_links()
+        Fsto.updateLinks(serial)
         .then(function(){
           return serial.save();
         })
@@ -51,15 +53,21 @@ module.exports =  {
     });
   },
 
-  fsUpdateLinksSerial: function(serialUrl) {
+  checkFstoVideo: function(serialUrl) {
+    console.log(new Date() + ' -- check fsto video request -- ' + serialUrl);
+    var serial;
     return models.Serial
     .findOne({url: serialUrl})
     .exec()
-    .then(function(serial) {
-      return serial.fs_update_links()
-      .then(function() {
-        return serial.save();
-      });
-    });
+    .then(function(_serial) {
+      serial = _serial;
+      return Fsto.updateLinks(serial)
+    })
+    .then(function() {
+      return serial.save();
+    })
+    .then(function() {
+      return serial;
+    })
   }
 };

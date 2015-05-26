@@ -47,11 +47,8 @@ app.get('/fs_update_links', function(req, res) {
   handle(result, res);
 });
 
-app.get('/fs_update_links/(:serial)', function(req, res) {
-  var result = controllers.fsUpdateLinksSerial(req.params.serial)
-  .then(function() {
-    return {error: false};
-  })
+app.get('/check_fsto_video/(:serial)', function(req, res) {
+  var result = controllers.checkFstoVideo(req.params.serial);
   handle(result, res);
 });
 
