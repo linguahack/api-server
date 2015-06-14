@@ -1,20 +1,38 @@
+'use strict'
 
 var cheerio = require('cheerio');
 var request = require('request-promise');
-var Promise = require('promise');
 var jsonify = require('../utils/jsonify');
 
 
+class Parser {
+
+  _getFullUrl(serial) {
+    return `http://fs.to/video/serials/${serial.fsto.id}-${serial.fsto.url}.html`;
+  }
+
+
+  _getPlayerUrl(serial) {
+    return "http://fs.to/video/serials/view/" + serial.fsto.id;
+  }
+
+  getNameAndImage(serial) {
+    return request({
+      url: this._getFullUrl(serial)
+    })
+    .then(function(body) {
+      var $ = cheerio.load(body);
+      return {
+        name: ($('div.b-tab-item__title-origin')).html(),
+        image_url: ($('.poster-main img')).attr('src')
+      };
+    });
+  }
+}
+
 var Fsto = {};
 module.exports = Fsto;
-
-Fsto.getPlayerUrl = function(serial) {
-  return "http://fs.to/video/serials/view/" + serial.fsto.id;
-};
-
-Fsto.getFullUrl = function(serial) {
-  return "http://fs.to/video/serials/" + serial.fsto.id + "-" + serial.fsto.url + ".html";
-};
+var parser = new Parser();
 
 Fsto.setFullUrl = function(serial, url) {
   var regex;
@@ -24,13 +42,10 @@ Fsto.setFullUrl = function(serial, url) {
 };
 
 Fsto.getNameAndImage = function(serial) {
-  return request({
-    url: Fsto.getFullUrl(serial)
-  })
-  .then(function(body) {
-    var $ = cheerio.load(body);
-    serial.fsto.name = ($('div.b-tab-item__title-origin')).html();
-    serial.fsto.image_url = ($('.poster-main img')).attr('src');
+  return parser.getNameAndImage(serial)
+  .then(function(result) {
+    serial.fsto.name = result.name;
+    serial.fsto.image_url = result.image_url;
   });
 };
 

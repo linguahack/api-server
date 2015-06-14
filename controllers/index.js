@@ -1,5 +1,4 @@
 
-var Promise = require('promise');
 var Serial = require('../models/serial');
 var Fsto = require('../parsers/fsto');
 

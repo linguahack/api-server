@@ -1,6 +1,5 @@
 
 var express = require('express');
-var Promise = require('promise');
 var bodyParser = require('body-parser');
 var controllers = require('../controllers');
 
