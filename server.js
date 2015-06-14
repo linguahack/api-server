@@ -1,8 +1,12 @@
 
 var express = require('express');
 var cors = require('express-cors');
-var routes = require('./backend/routes');
+var mongoose = require('mongoose');
+var config = require('./utils/getConfig');
+var routes = require('./routes');
 
+
+mongoose.connect(config('mongo_url'));
 var server = express();
 
 // server.use(cors({

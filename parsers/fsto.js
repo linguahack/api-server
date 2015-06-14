@@ -2,7 +2,7 @@
 var cheerio = require('cheerio');
 var request = require('request-promise');
 var Promise = require('promise');
-var utils = require('../common/utils');
+var jsonify = require('../utils/jsonify');
 
 
 var Fsto = {};
@@ -145,7 +145,7 @@ Fsto.getLink = function(params) {
     if (!text) {
       throw new Error('cannot parse body');
     }
-    var json = utils.jsonify(text);
+    var json = jsonify(text);
     var playlist_parsed = JSON.parse(json);
     var episodes_fromdb = season.episodes;
     var e_fromdb, e_parsed, file;
