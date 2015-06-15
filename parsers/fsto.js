@@ -7,18 +7,37 @@ var jsonify = require('../utils/jsonify');
 
 class Parser {
 
-  _getFullUrl(serial) {
+  fullUrl(serial) {
     return `http://fs.to/video/serials/${serial.fsto.id}-${serial.fsto.url}.html`;
   }
 
 
-  _getPlayerUrl(serial) {
+  playerUrl(serial) {
     return "http://fs.to/video/serials/view/" + serial.fsto.id;
   }
 
-  getNameAndImage(serial) {
+  commonQueryParams(serial, folder_id) {
+    if (folder_id == null) {
+      folder_id = 0;
+    }
+    return {
+      ajax: 1,
+      r: Math.random(),
+      id: serial.fsto.id,
+      download: 1,
+      view: 1,
+      view_embed: 0,
+      blocked: 0,
+      folder_quality: null,
+      folder_lang: null,
+      folder_translate: null,
+      folder: folder_id
+    };
+  }
+
+  parseNameAndImage(serial) {
     return request({
-      url: this._getFullUrl(serial)
+      url: this.fullUrl(serial)
     })
     .then(function(body) {
       var $ = cheerio.load(body);
@@ -28,10 +47,56 @@ class Parser {
       };
     });
   }
+
+  parseSeasons(serial) {
+    return request({
+      url: this.fullUrl(serial),
+      qs: this.commonQueryParams(serial)
+    })
+    .then(function(body) {
+      var $ = cheerio.load(body);
+      var seasons = [];
+
+      var season_regex = /(\d+) сезон/;
+      var link_name_regex = /fl(\d+)/;
+
+      ($('li.folder a.link-simple')).each(function(i, elem) {
+        elem = $(elem);
+        var number = season_regex.exec(elem.text());
+        number = number ? +number[1] : null;
+        if (number) {
+          var folder_id = +link_name_regex.exec(elem.attr('name'))[1];
+          seasons.push({number, folder_id});
+        }
+      });
+      return seasons;
+    });
+  }
+
+  parseTranslation(serial, season) {
+    return request({
+      url: this.fullUrl(serial),
+      qs: this.commonQueryParams(serial, season.fsto.folder_id)
+    })
+    .then(function(body) {
+      let $ = cheerio.load(body);
+
+      let link_name_regex = /fl(\d+)/;
+      let elem = $('li.folder a.link-subtype.m-en');
+
+      let elem_id = link_name_regex.exec(elem.attr('name'));
+      elem_id = elem_id ? elem_id[1] : elem_id;
+      if (elem_id == null) {
+        throw new Error('cannot parse body' + serial.name + season.number);
+      }
+      return {en_folder_id: +elem_id};
+    });
+  };
+  
 }
 
 var Fsto = {};
-module.exports = Fsto;
+module.exports = {Parser, Fsto};
 var parser = new Parser();
 
 Fsto.setFullUrl = function(serial, url) {
@@ -41,75 +106,6 @@ Fsto.setFullUrl = function(serial, url) {
   serial.fsto.url = regex[2];
 };
 
-Fsto.getNameAndImage = function(serial) {
-  return parser.getNameAndImage(serial)
-  .then(function(result) {
-    serial.fsto.name = result.name;
-    serial.fsto.image_url = result.image_url;
-  });
-};
-
-Fsto.commonQueryParams = function(serial, folder_id) {
-  if (folder_id == null) {
-    folder_id = 0;
-  }
-  return {
-    ajax: 1,
-    r: Math.random(),
-    id: serial.fsto.id,
-    download: 1,
-    view: 1,
-    view_embed: 0,
-    blocked: 0,
-    folder_quality: null,
-    folder_lang: null,
-    folder_translate: null,
-    folder: folder_id
-  };
-};
-
-Fsto.getSeasons = function(serial) {
-  return request({
-    url: Fsto.getFullUrl(serial),
-    qs: Fsto.commonQueryParams(serial)
-  })
-  .then(function(body) {
-    var $ = cheerio.load(body);
-    var season_regex = /(\d+) сезон/;
-    var link_name_regex = /fl(\d+)/;
-    ($('li.folder a.link-simple')).each(function(i, elem) {
-      elem = $(elem);
-      var season_number = season_regex.exec(elem.text());
-      season_number = season_number ? season_number[1] : null;
-      if (season_number) {
-        var id = link_name_regex.exec(elem.attr('name'))[1];
-        var season = serial.find_or_create_season(season_number);
-        season.fsto = {
-          folder_id: id
-        };
-      }
-    });
-  });
-};
-
-Fsto.getTranslation = function(season) {
-  return request({
-    url: Fsto.getFullUrl(season.parent()),
-    qs: Fsto.commonQueryParams(season.parent(), season.fsto.folder_id)
-  })
-  .then(function(body) {
-    var $, elem, elem_id, link_name_regex, _ref;
-
-    $ = cheerio.load(body);
-    link_name_regex = /fl(\d+)/;
-    elem = $('li.folder a.link-subtype.m-en');
-    elem_id = (_ref = link_name_regex.exec(elem.attr('name'))) != null ? _ref[1] : void 0;
-    if (elem_id == null) {
-      throw new Error('cannot parse body' + season.parent().name + season.number);
-    }
-    season.fsto.en_folder_id = elem_id;
-  });
-};
 
 Fsto.getEpisodes = function(season) {
   return request({

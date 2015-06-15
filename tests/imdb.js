@@ -2,8 +2,6 @@
 (function() {
   var assert, expect, models, _ref;
 
-  models = require('../models');
-
   _ref = require('chai'), assert = _ref.assert, expect = _ref.expect;
 
   describe('imdb', function() {

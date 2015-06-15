@@ -1,73 +1,63 @@
+'use strict';
 
-
-var models = require('../models');
+var Parser = require('../parsers/fsto').Parser;
 var chai = require('chai');
 var assert = chai.assert, expect = chai.expect;
 
 describe.only('fsto', function() {
-  var episode, season, serial;
-  this.timeout(40000);
-  var fs_url = "http://fs.to/video/serials/iMb0cUQyusQCvXDNKahvLa-fargo.html";
 
-  before(function() {
-    return models.Serial.findOne({
+  var serial = {
+    fsto: {
+      id: 'iMb0cUQyusQCvXDNKahvLa',
       url: 'fargo'
-    }).exec()
-    .then(function(result) {
-      if (!serial) {
-        serial = result;
+    },
+    seasons: [{
+      number: 1,
+      fsto: {
+        folder_id: 335355,
+        en_folder_id: 707923
       }
-      if (!season) {
-        season = serial.seasons[0];
-      }
-      if (!episode) {
-        episode = season.episodes[0];
-      }
-    });
-  });
+    }]
+  };
 
-  afterEach(function() {
-    return serial.save();
-  });
+  var parser = new Parser;
 
-  describe('full url', function() {
-    it('should save url and id', function() {
-      serial.fsto.full_url = fs_url;
-      assert.typeOf(serial.fsto.url, 'string');
-      assert.typeOf(serial.fsto.id, 'string');
-    });
-  });
-
-  describe('get name and image', function() {
-    it('should get name and image', function() {
-      return serial.fs_get_name_and_image()
-      .then(function() {
-        assert.typeOf(serial.fsto.name, 'string');
-        assert.typeOf(serial.fsto.image_url, 'string');
+  describe('name and image', function() {
+    it('should parse name and image', function() {
+      return parser.parseNameAndImage(serial)
+      .then(function(result) {
+        assert.typeOf(result.name, 'string');
+        assert.typeOf(result.image_url, 'string');
       });
     });
   });
 
-  describe('get seasons', function() {
-    it('should get seasons', function() {
-      return serial.fs_get_seasons()
-      .then(function() {
-        expect(serial.seasons).to.have.length.least(1);
-        season = serial.seasons[0];
+  describe('seasons', function() {
+    it('should parse seasons', function() {
+      return parser.parseSeasons(serial)
+      .then(function(seasons) {
+        expect(seasons).to.have.length.least(1);
+        let season = seasons[0];
         expect(season.number).to.be.a('number');
-        expect(season.fsto.folder_id).to.be.a('number');
+        expect(season.folder_id).to.be.a('number');
+      });
+    });
+  });
+  
+  describe('translation', function() {
+    it('should parse a translation', function() {
+      return parser.parseTranslation(serial, serial.seasons[0])
+      .then(function(result) {
+        console.log(result);
+        expect(result.en_folder_id).to.be.a('number');
       });
     });
   });
 
-  describe('get translation', function() {
-    it('should get a translation', function() {
-      return season.fs_get_translation()
-      .then(function() {
-        expect(season.fsto.en_folder_id).to.be.a('number');
-      });
-    });
-  });
+});
+
+describe.skip('fstoold', function() {
+
 
   describe('get episodes', function() {
     it('should get episodes', function() {
