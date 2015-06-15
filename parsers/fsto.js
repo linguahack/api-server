@@ -2,8 +2,7 @@
 
 var cheerio = require('cheerio');
 var request = require('request-promise');
-var jsonify = require('../utils/jsonify');
-
+var _ = require('../utils/utils');
 
 class Parser {
 
@@ -14,6 +13,10 @@ class Parser {
 
   playerUrl(serial) {
     return "http://fs.to/video/serials/view/" + serial.fsto.id;
+  }
+
+  frameUrl(serial) {
+    return 'http://fs.to/video/serials/view_iframe/' + serial.fsto.id;
   }
 
   commonQueryParams(serial, folder_id) {
@@ -91,115 +94,121 @@ class Parser {
       }
       return {en_folder_id: +elem_id};
     });
+  }
+
+  parseEpisodes(serial, season) {
+    return request({
+      url: this.fullUrl(serial),
+      qs: this.commonQueryParams(serial, season.fsto.en_folder_id)
+    })
+    .then(function(body) {
+      var $ = cheerio.load(body);
+
+      var file_id_from_link_regex = /file=(\d+)/;
+      var episodes_from_text = /Серия (\d+)/;
+      var qualities = ['hdtvrip', '720', '1080'];
+      var files = [];
+      for (var i = 0; i < qualities.length; i++) {
+        var quality = qualities[i];
+        ($("li.video-" + quality + " a.b-file-new__link-material")).each(function(i, elem) {
+          elem = $(elem);
+          let file_id = file_id_from_link_regex.exec(elem.attr('href'))[1];
+          let number = episodes_from_text.exec(elem.text())[1];
+          if (number) {
+            files.push({
+              number : number,
+              quality: quality,
+              file_id: file_id
+            });
+          }
+        });
+      }
+      return files;
+    });
+  }
+
+  parseLink(serial, file) {
+    return request({
+      url: this.frameUrl(serial),
+      qs: {
+        play: 1,
+        file: file.file_id
+      }
+    })
+    .then(function(body) {
+      var $ = cheerio.load(body);
+
+      var files = [];
+      
+      $('.b-aplayer__popup-series-episodes > ul > li > a').each(function(i, elem) {
+        let episode = JSON.parse(elem.attribs['data-file']);
+        files.push({
+          number: +episode.fsData.file_series,
+          quality: episode.fsData.file_quality,
+          file_id: +episode.fsData.file_id,
+          link: episode.url
+        });
+      });
+
+      return files;
+    });
   };
   
 }
 
+class Controller {
+
+  constructor() {
+    this.parser = new Parser();
+  }
+
+  updateLink(file) {
+    if ((file.last_updated) && new Date - file.last_updated < 60000) {
+      return Promise.resolve();
+    }
+    var episodes = file.parent().parent().episodes;
+    return this.parser.parseLink(file.ownerDocument(), file)
+    .then(function(parsedFiles) {
+      for(var parsedFile of parsedFiles) {
+        let episode = _.find(episodes, function(e){return e.number === parsedFile.number;});
+        if (episode) {
+          let file = _.find(episode.fsto.files, function(f){return f.file_id === parsedFile.file_id;});
+        }
+        if (file) {
+          file.link = parsedFile.link;
+          file.last_updated = new Date();
+        }
+      }
+    });
+  }
+
+  updateLinks(serial) {
+    var i, j, k, season, episode, file, promise = Promise.resolve();
+    for (i = 0; i < serial.seasons.length; i++) {
+      season = serial.seasons[i];
+      for (j = 0; j < season.episodes.length; j++) {
+        episode = season.episodes[j];
+        for (k = 0; k < episode.fsto.files.length; k++) {
+          file = episode.fsto.files[k];
+          promise = promise.then(this.updateLink.bind(this, file));
+        }
+      }
+    }
+    return promise;
+  }
+
+}
+
+module.exports = {Parser, Controller};
+
+
 var Fsto = {};
-module.exports = {Parser, Fsto};
-var parser = new Parser();
 
 Fsto.setFullUrl = function(serial, url) {
   var regex;
   regex = /serials\/([\da-zA-Z]*)-(.*)\.html/.exec(url);
   serial.fsto.id = regex[1];
   serial.fsto.url = regex[2];
-};
-
-
-Fsto.getEpisodes = function(season) {
-  return request({
-    url: Fsto.getFullUrl(season.parent()),
-    qs: Fsto.commonQueryParams(season.parent(), season.fsto.en_folder_id)
-  })
-  .then(function(body) {
-    var file_id_from_link_regex = /file=(\d+)/;
-    var episodes_from_text = /Серия (\d+)/;
-    var $ = cheerio.load(body);
-    var qualities = ['hdtvrip', '720', '1080'];
-    for (var _i = 0, _len = qualities.length; _i < _len; _i++) {
-      var quality = qualities[_i];
-      ($("li.video-" + quality + " a.b-file-new__link-material")).each(function(i, elem) {
-        var episode, episode_number, file_id, _ref1, _ref2;
-        elem = $(elem);
-        var file_id = file_id_from_link_regex.exec(elem.attr('href'))[1];
-        var episode_number = episodes_from_text.exec(elem.text())[1];
-        if (episode_number) {
-          var episode = season.find_or_create_episode(episode_number);
-          episode.fsto.files.push({
-            quality: quality,
-            file_id: file_id
-          });
-        }
-      });
-    }
-  });
-};
-
-Fsto.getLink = function(params) {
-  var serial = params.serial, season = params.season, fs_file = params.fs_file;
-  return request({
-    url: Fsto.getPlayerUrl(serial),
-    qs: {
-      play: 1,
-      file: fs_file.file_id
-    }
-  })
-  .then(function(body) {
-    var javascript_playlist_regexp = /onUserViewing[\s\S]*playlist: (\[[^\[]*?\])/m;
-    var text = javascript_playlist_regexp.exec(body);
-    text = text ? text[1] : null;
-    if (!text) {
-      var javascript_playlist_regexp2 = /onUserViewing[\s\S]*playlist: (\[[^"]*?("[^"]*?"[^"]*?)*?\])/m;
-      text = javascript_playlist_regexp2.exec(body)[1];
-    }
-    if (!text) {
-      throw new Error('cannot parse body');
-    }
-    var json = jsonify(text);
-    var playlist_parsed = JSON.parse(json);
-    var episodes_fromdb = season.episodes;
-    var e_fromdb, e_parsed, file;
-    for (var i = 0; i < playlist_parsed.length; i++) {
-      e_parsed = playlist_parsed[i];
-      e_fromdb = episodes_fromdb.filter(function(e_fromdb) {
-        return e_parsed.fsData.file_series === e_fromdb.number.toString();
-      });
-      if (e_fromdb.length > 0) {
-        file = e_fromdb[0].fsto.files.filter(function(file) {
-          return e_parsed.fsData.file_quality === file.quality;
-        });
-        file[0].link = e_parsed.fsData.download_url;
-        file[0].last_updated = new Date;
-      }
-    }
-  });
-};
-
-Fsto.updateLink = function(file) {
-  if ((file.last_updated) && new Date - file.last_updated < 60000) {
-    return Promise.resolve();
-  }
-  return Fsto.getLink({
-    fs_file: file,
-    serial: file.ownerDocument(),
-    season: file.parent().parent()
-  });
-};
-
-Fsto.updateLinks = function(serial) {
-  var i, j, k, season, episode, file, promise = Promise.resolve();
-  for (i = 0; i < serial.seasons.length; i++) {
-    season = serial.seasons[i];
-    for (j = 0; j < season.episodes.length; j++) {
-      episode = season.episodes[j];
-      for (k = 0; k < episode.fsto.files.length; k++) {
-        file = episode.fsto.files[k];
-        promise = promise.then(Fsto.updateLink.bind(null, file));
-      }
-    }
-  }
-  return promise;
 };
 
 

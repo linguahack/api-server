@@ -5,7 +5,7 @@ var controllers = require('../controllers');
 
 var app = express();
 
-app.use(bodyParser.urlencoded({extended: true}));
+var postMiddleware = bodyParser.urlencoded({extended: true});
 
 app.use(function(req, res, next) {
   res.handle = function(promise) {
@@ -26,7 +26,8 @@ app.get('/serial/(:serial)', function(req, res) {
   var result = controllers.getSerial(req.params.serial)
   res.handle(result);
 });
-app.post('/serial', function(req, res) {
+
+app.post('/serial', postMiddleware, function(req, res) {
   var result = Promise.resolve()
   .then(function() {
     console.log(req.body.serial);
@@ -41,15 +42,7 @@ app.post('/serial', function(req, res) {
   res.handle(result);
 });
 
-app.get('/fs_update_links', function(req, res) {
-  var result = controllers.fsUpdateLinks()
-  .then(function() {
-    return {error: false};
-  })
-  res.handle(result);
-});
-
-app.get('/check_fsto_video/(:serial)', function(req, res) {
+app.get('/serial/(:serial)/check_fsto', function(req, res) {
   var result = controllers.checkFstoVideo(req.params.serial);
   res.handle(result);
 });

@@ -1,6 +1,7 @@
 
 var Serial = require('../models/serial');
 var Fsto = require('../parsers/fsto');
+var fsto = new Fsto.Controller;
 
 module.exports =  {
   getSerials: function() {
@@ -36,6 +37,7 @@ module.exports =  {
   },
 
   fsUpdateLinks: function() {
+    return null;
     return Serial
     .find({})
     .exec()
@@ -57,7 +59,7 @@ module.exports =  {
     .exec()
     .then(function(_serial) {
       serial = _serial;
-      return Fsto.updateLinks(serial)
+      return fsto.updateLinks(serial)
     })
     .then(function() {
       return serial.save();
