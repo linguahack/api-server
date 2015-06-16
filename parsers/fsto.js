@@ -171,8 +171,9 @@ class Controller {
     .then(function(parsedFiles) {
       for(var parsedFile of parsedFiles) {
         let episode = _.find(episodes, function(e){return e.number === parsedFile.number;});
+        var file;
         if (episode) {
-          let file = _.find(episode.fsto.files, function(f){return f.file_id === parsedFile.file_id;});
+          file = _.find(episode.fsto.files, function(f){return f.file_id === parsedFile.file_id;});
         }
         if (file) {
           file.link = parsedFile.link;
