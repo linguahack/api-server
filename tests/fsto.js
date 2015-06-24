@@ -1,35 +1,36 @@
 'use strict';
 
-var Parser = require('../parsers/fsto').Parser;
+var fsto = require('../parsers/fsto');
 var chai = require('chai');
 var assert = chai.assert, expect = chai.expect;
 
-describe.only('fsto', function() {
-
-  var serial = {
+var serial = {
+  fsto: {
+    id: 'iMb0cUQyusQCvXDNKahvLa',
+    url: 'fargo'
+  },
+  seasons: [{
+    number: 1,
     fsto: {
-      id: 'iMb0cUQyusQCvXDNKahvLa',
-      url: 'fargo'
+      folder_id: 335355,
+      en_folder_id: 707923
     },
-    seasons: [{
+    episodes: [{
       number: 1,
       fsto: {
-        folder_id: 335355,
-        en_folder_id: 707923
-      },
-      episodes: [{
-        number: 1,
-        fsto: {
-          files: [{
-            quality: '1080',
-            file_id: 3328586
-          }]
-        }
-      }]
+        files: [{
+          quality: '1080',
+          file_id: 3328586
+        }]
+      }
     }]
-  };
+  }],
+  save: function() {}
+};
 
-  var parser = new Parser;
+describe('fsto.Parser', function() {
+
+  var parser = new fsto.Parser;
 
   describe('name and image', function() {
     it('should parse name and image', function() {
@@ -74,21 +75,20 @@ describe.only('fsto', function() {
     });
   });
 
-  describe('link', function() {
-    it('should parse video links', function() {
-      return parser.parseLink(serial, serial.seasons[0].episodes[0].fsto.files[0])
-      .then(function(files) {
-        expect(files).to.have.length.least(1);
-        expect(files[0].number).to.be.a.number;
-        expect(files[0].file_id).to.be.a.number;
-        expect(files[0].quality).to.be.a.string;
-        expect(files[0].link).to.be.a.string;
-      });
-    });
-  });
-
-
 });
+
+describe.only('fsto.Controller', function () {
+  var controller = new fsto.Controller();
+
+  describe('update serial', function() {
+    it('should update serial', function() {
+      return controller.updateSerial(serial)
+      .then(function(result) {
+
+      });
+    })
+  });
+})
 
 var fs_urls = [
   "http://fs.to/video/serials/iw8ypXjXXom7QpgYXsvU2Y-vo-vse-tyazhkije.html",

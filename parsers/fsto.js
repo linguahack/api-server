@@ -126,33 +126,6 @@ class Parser {
       return files;
     });
   }
-
-  parseLink(serial, file) {
-    return request({
-      url: this.frameUrl(serial),
-      qs: {
-        play: 1,
-        file: file.file_id
-      }
-    })
-    .then(function(body) {
-      var $ = cheerio.load(body);
-
-      var files = [];
-      
-      $('.b-aplayer__popup-series-episodes > ul > li > a').each(function(i, elem) {
-        let episode = JSON.parse(elem.attribs['data-file']);
-        files.push({
-          number: +episode.fsData.file_series,
-          quality: episode.fsData.file_quality,
-          file_id: +episode.fsData.file_id,
-          link: episode.url
-        });
-      });
-
-      return files;
-    });
-  };
   
 }
 
@@ -162,40 +135,32 @@ class Controller {
     this.parser = new Parser();
   }
 
-  updateLink(file) {
-    if ((file.last_updated) && new Date - file.last_updated < 60000) {
-      return Promise.resolve();
+  updateSeason(serial, parsedSeason) {
+    var season = serial.seasons.filter(function(season) { return season.number = parsedSeason.number; })[0];
+    if (!season) {
+      serial.seasons.push(serial.seasons.create({number: parsedSeason.number}));
+      season = serial.seasons[serial.seasons.length - 1];
     }
-    var episodes = file.parent().parent().episodes;
-    return this.parser.parseLink(file.ownerDocument(), file)
-    .then(function(parsedFiles) {
-      for(var parsedFile of parsedFiles) {
-        let episode = _.find(episodes, function(e){return e.number === parsedFile.number;});
-        var file;
-        if (episode) {
-          file = _.find(episode.fsto.files, function(f){return f.file_id === parsedFile.file_id;});
-        }
-        if (file) {
-          file.link = parsedFile.link;
-          file.last_updated = new Date();
-        }
-      }
-    });
+    season.fsto.folder_id = parsedSeason.folder_id;
+    return parseTranslation(serial, season)
+    .then(function (result) {
+      season.fsto.en_folder_id = result.en_folder_id;
+    })
   }
 
-  updateLinks(serial) {
-    var i, j, k, season, episode, file, promise = Promise.resolve();
-    for (i = 0; i < serial.seasons.length; i++) {
-      season = serial.seasons[i];
-      for (j = 0; j < season.episodes.length; j++) {
-        episode = season.episodes[j];
-        for (k = 0; k < episode.fsto.files.length; k++) {
-          file = episode.fsto.files[k];
-          promise = promise.then(this.updateLink.bind(this, file));
-        }
+  updateSerial(serial) {
+    var controller = this;
+    return this.parser.parseSeasons(serial)
+    .then(function(parsedSeasons) {
+      var promiseChain = Promise.resolve();
+      for (var parsedSeason of parsedSeasons) {
+        promiseChain = promiseChain.then(
+          (
+            function(parsedSeason) {return controller.updateSeason.bind(controller, serial, parsedSeason);}
+          )(parsedSeason)
+        );
       }
-    }
-    return promise;
+    })
   }
 
 }
