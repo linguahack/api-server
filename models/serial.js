@@ -24,7 +24,8 @@ var serialSchema = new mongoose.Schema({
     id: String,
     poster_path: String,
     backdrop_path: String,
-    overview: String
+    overview: String,
+    imdb: String
   },
   seasons: [seasonSchema]
 });

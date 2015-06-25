@@ -22,6 +22,7 @@ describe('tmdb.parser', function() {
       assert.typeOf(result.backdrop_path, 'string');
       assert.typeOf(result.poster_path, 'string');
       assert.typeOf(result.overview, 'string');
+      assert.typeOf(result.imdb, 'string');
     });
   });
 });

@@ -27,14 +27,16 @@ class Parser {
       url: this.serialUrl(serial),
       json: true,
       qs: {
-        api_key: this.api_key
+        api_key: this.api_key,
+        append_to_response: 'external_ids'
       }
     })
     .then(function(body) {
       return {
         backdrop_path: body.backdrop_path,
         poster_path: body.poster_path,
-        overview: body.overview
+        overview: body.overview,
+        imdb: body.external_ids.imdb_id
       };
     });
   }
@@ -69,6 +71,7 @@ class Controller {
       serial.tmdb.backdrop_path = result.backdrop_path;
       serial.tmdb.poster_path = result.poster_path;
       serial.tmdb.overview = result.overview;
+      serial.tmdb.imdb = result.imdb;
       return serial;
     })
   }
