@@ -2,7 +2,7 @@
 
 var cheerio = require('cheerio');
 var request = require('request-promise');
-var _ = require('../utils/utils');
+var utils = require('../utils/utils');
 
 class Parser {
 
@@ -90,7 +90,7 @@ class Parser {
       let elem_id = link_name_regex.exec(elem.attr('name'));
       elem_id = elem_id ? elem_id[1] : elem_id;
       if (elem_id == null) {
-        throw new Error('cannot parse body' + serial.name + season.number);
+        throw new Error(`cannot parse body of ${serial.name} season ${season.number}`);
       }
       return {en_folder_id: +elem_id};
     });
@@ -106,27 +106,31 @@ class Parser {
 
       var file_id_from_link_regex = /file=(\d+)/;
       var episodes_from_text = /Серия (\d+)/;
-      var qualities = ['hdtvrip', '720', '1080'];
       var files = [];
-      for (var i = 0; i < qualities.length; i++) {
-        var quality = qualities[i];
-        ($("li.video-" + quality + " a.b-file-new__link-material")).each(function(i, elem) {
-          elem = $(elem);
-          let file_id = file_id_from_link_regex.exec(elem.attr('href'))[1];
-          let number = episodes_from_text.exec(elem.text())[1];
-          if (number) {
-            files.push({
-              number : number,
-              quality: quality,
-              file_id: file_id
-            });
-          }
-        });
-      }
+      ($("li.b-file-new")).each(function(i, elem) {
+        var quality = $('.video-qulaity', elem).text();
+        elem = $('a.b-file-new__link-material', elem);
+        let file_id = file_id_from_link_regex.exec(elem.attr('href'))[1];
+        let number = episodes_from_text.exec(elem.text())[1];
+        if (number) {
+          files.push({
+            number : number,
+            quality: quality,
+            file_id: file_id
+          });
+        }
+      });
       return files;
     });
   }
   
+  parseUrl(url) {
+    var regex = /serials\/([\da-zA-Z]*)-(.*)\.html/.exec(url);
+    return {
+      id: regex[1],
+      url: regex[2]
+    }
+  }
 }
 
 class Controller {
@@ -135,17 +139,28 @@ class Controller {
     this.parser = new Parser();
   }
 
+  updateEpisode(season, parsedEpisode) {
+    var episode = utils.getItem(season.episodes, {number: +parsedEpisode.number});
+    var file = utils.getItem(episode.fsto.files, {file_id: +parsedEpisode.file_id}, 'file_id');
+    file.quality = parsedEpisode.quality;
+  }
+
   updateSeason(serial, parsedSeason) {
-    var season = serial.seasons.filter(function(season) { return season.number = parsedSeason.number; })[0];
-    if (!season) {
-      serial.seasons.push(serial.seasons.create({number: parsedSeason.number}));
-      season = serial.seasons[serial.seasons.length - 1];
-    }
+    var controller = this;
+    var season = utils.getItem(serial.seasons, {number: parsedSeason.number});
     season.fsto.folder_id = parsedSeason.folder_id;
-    return parseTranslation(serial, season)
+    return this.parser.parseTranslation(serial, season)
     .then(function (result) {
       season.fsto.en_folder_id = result.en_folder_id;
+      return controller.parser.parseEpisodes(serial, season);
     })
+    .then(function(parsedEpisodes) {
+      var promiseChain = Promise.resolve();
+      for (var parsedEpisode of parsedEpisodes) {
+        promiseChain = promiseChain.then(controller.updateEpisode.bind(controller, season, parsedEpisode));
+      }
+      return promiseChain;
+    });
   }
 
   updateSerial(serial) {
@@ -154,57 +169,15 @@ class Controller {
     .then(function(parsedSeasons) {
       var promiseChain = Promise.resolve();
       for (var parsedSeason of parsedSeasons) {
-        promiseChain = promiseChain.then(
-          (
-            function(parsedSeason) {return controller.updateSeason.bind(controller, serial, parsedSeason);}
-          )(parsedSeason)
-        );
+        promiseChain = promiseChain.then(controller.updateSeason.bind(controller, serial, parsedSeason));
       }
+      return promiseChain;
+    })
+    .then(function() {
+      return serial;
     })
   }
 
 }
 
 module.exports = {Parser, Controller};
-
-
-var Fsto = {};
-
-Fsto.setFullUrl = function(serial, url) {
-  var regex;
-  regex = /serials\/([\da-zA-Z]*)-(.*)\.html/.exec(url);
-  serial.fsto.id = regex[1];
-  serial.fsto.url = regex[2];
-};
-
-
-Fsto.serialFromUrl = function(url, model) {
-  //TODO: this function
-  var serial = new model;
-  serial.fsto.full_url = url;
-  var promise = serial
-  .fs_get_name_and_image()
-  .then(serial.fs_get_seasons.bind(serial));
-
-  for (var i = 0; i < serial.seasons.length; ++i) {
-    var season = serial.seasons[i];
-    promise = promise
-    .then(season.fs_get_translation.bind(season))
-    .then(season.fs_get_episodes.bind(season));
-  }
-  promise = promise
-  .then(serial.fs_update_links.bind(serial))
-  .then(function() {
-    serial.name = serial.fsto.name;
-    serial.generate_url();
-  })
-  .then(serial.save.bind(serial));
-  return promise;
-};
-
-Fsto.serialFromUrls = function(urls, model) {
-  var promises = urls.map(function(url) {
-    return Fsto.serialFromUrl(url, model);
-  });
-  return Promise.all(promises);
-};

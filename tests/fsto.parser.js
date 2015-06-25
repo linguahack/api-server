@@ -77,18 +77,6 @@ describe('fsto.Parser', function() {
 
 });
 
-describe.only('fsto.Controller', function () {
-  var controller = new fsto.Controller();
-
-  describe('update serial', function() {
-    it('should update serial', function() {
-      return controller.updateSerial(serial)
-      .then(function(result) {
-
-      });
-    })
-  });
-})
 
 var fs_urls = [
   "http://fs.to/video/serials/iw8ypXjXXom7QpgYXsvU2Y-vo-vse-tyazhkije.html",

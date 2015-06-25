@@ -13,7 +13,6 @@ var serialSchema = new mongoose.Schema({
   fsto: {
     id: String,
     url: String,
-    image_url: String,
     name: String
   },
   imdb: {

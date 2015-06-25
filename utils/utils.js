@@ -1,13 +1,14 @@
 
 
-var _ = {};
-module.exports = _;
+var utils = {};
+module.exports = utils;
 
-_.find = function(array, predicate) {
-	for(var i = 0; i < array.length; ++i) {
-    if (predicate(array[i])) {
-      return array[i];
-    }
+utils.getItem = function(collection, item, keyField) {
+  keyField = keyField || 'number';
+  var result = collection.filter(function(collectionItem) { return collectionItem[keyField] === item[keyField]; })[0];
+  if (!result) {
+    collection.push(collection.create(item));
+    result = collection[collection.length - 1];
   }
-  return null;
+  return result;
 }
