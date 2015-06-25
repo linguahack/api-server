@@ -28,6 +28,7 @@ app.get('/serial/(:serial)', function(req, res) {
 });
 
 app.post('/serial', postMiddleware, function(req, res) {
+  return res.end();
   var result = Promise.resolve()
   .then(function() {
     console.log(req.body.serial);
@@ -39,11 +40,6 @@ app.post('/serial', postMiddleware, function(req, res) {
   .then(function(serialId) {
     return controllers.getSerial(serialId);
   })
-  res.handle(result);
-});
-
-app.get('/serial/(:serial)/check_fsto', function(req, res) {
-  var result = controllers.checkFstoVideo(req.params.serial);
   res.handle(result);
 });
 
