@@ -17,7 +17,7 @@ describe('fsto.Controller', function () {
   var controller = new fsto.Controller();
 
   it('should update serial', function() {
-    return Serial.findOne({url: 'true_detective'})
+    return Serial.findOne({url: 'fargo'})
     .then(function(serial) {
     	return controller.updateSerial(serial);
     })
