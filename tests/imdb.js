@@ -14,7 +14,7 @@ describe('imdb.parser', function() {
       id: "tt2802850"
     },
     tmdb: {
-
+      imdb: "tt2802850"
     }
   };
   var parser = new imdb.Parser();
@@ -29,7 +29,7 @@ describe('imdb.parser', function() {
   });
 });
 
-describe.only('imdb.controller', function() {
+describe('imdb.controller', function() {
 
   this.timeout(10000);
 

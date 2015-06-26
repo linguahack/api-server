@@ -6,7 +6,8 @@
     "express": "^4.10.2",
     "express-cors": "0.0.3",
     "mongoose": "^4.0.1",
-    "request-promise": "^0.4.2"
+    "request-promise": "^0.4.2",
+    "xmlbuilder": "^2.6.4"
   },
   "main": "server.js",
   "scripts": {

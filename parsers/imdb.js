@@ -7,7 +7,7 @@ var utils = require('../utils/utils');
 class Parser {
 
   fullUrl(serial) {
-    return "http://www.imdb.com/title/" + (serial.tmdb.imdb);
+    return "http://www.imdb.com/title/" + serial.imdb.id;
   }
 
   getMainInfo(serial) {
