@@ -18,7 +18,8 @@ var serialSchema = new mongoose.Schema({
   imdb: {
     id: String,
     image_url: String,
-    rating: String
+    rating: String,
+    description: String
   },
   tmdb: {
     id: String,

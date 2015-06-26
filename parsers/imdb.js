@@ -7,7 +7,7 @@ var utils = require('../utils/utils');
 class Parser {
 
   fullUrl(serial) {
-    return "http://www.imdb.com/title/" + serial.tmdb.imdb_id || serial.imdb.id;
+    return "http://www.imdb.com/title/" + (serial.tmdb.imdb);
   }
 
   getMainInfo(serial) {
@@ -32,9 +32,14 @@ class Controller {
   }
 
   updateSerial(serial) {
-    return parser.getMainInfo(serial)
+    return this.parser.getMainInfo(serial)
     .then(function(result) {
-      
+      serial.imdb.image_url = result.image_url;
+      serial.imdb.rating = result.rating;
+      serial.imdb.description = result.description;
+      return serial;
     })
   }
 }
+
+module.exports = {Parser, Controller};
