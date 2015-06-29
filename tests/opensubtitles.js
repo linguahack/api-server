@@ -2,11 +2,11 @@
 
 var chai = require('chai');
 var opensubtitles = require('../parsers/opensubtitles');
-var hasher = require('../parsers/hasher');
+var hasher = require('../parsers/opensubtitles.hasher');
 
 var assert = chai.assert, expect = chai.expect;
 
-describe('opensubtitles', function() {
+describe.only('opensubtitles', function() {
 
   var parser = new opensubtitles.Parser();
 
@@ -15,19 +15,27 @@ describe('opensubtitles', function() {
   })
 
   it('should login', function() {
-    return parser.login()
+    // return parser.login()
+    // .then(function(result) {
+    //   console.log(result);
+    // })
+  })
+
+  it('should search', function() {
+    return parser.search()
     .then(function(result) {
       console.log(result);
     })
   })
 });
 
-describe.only('hash', function() {
+describe('hash', function() {
 
   it('should hash', function() {
     return hasher.Hash("http://www.opensubtitles.org/addons/avi/breakdance.avi")
     .then(function(result) {
-      console.log(result);
+      assert.equal(result.size, '12909756');
+      assert.equal(result.hash, '8e245d9679d31e12');
     })
   })
 })
