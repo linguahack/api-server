@@ -2,6 +2,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var controllers = require('../controllers');
+var getSubtitles = require('../utils/getSubtitles');
 
 var app = express();
 
@@ -42,5 +43,15 @@ app.post('/serial', postMiddleware, function(req, res) {
   })
   res.handle(result);
 });
+
+
+app.get('/subtitles/convert', function(req, res) {
+  var url = req.query.url;
+  getSubtitles(url)
+  .then(function(subs) {
+    res.type('text/vtt');
+    subs.pipe(res);
+  });
+})
 
 module.exports = app;
