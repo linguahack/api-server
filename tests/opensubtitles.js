@@ -3,6 +3,7 @@
 var chai = require('chai');
 var opensubtitles = require('../parsers/opensubtitles');
 var hasher = require('../parsers/opensubtitles.hasher');
+var Serial = require('../models/serial');
 
 var assert = chai.assert, expect = chai.expect;
 
@@ -10,7 +11,7 @@ describe('opensubtitles', function() {
 
   var parser = new opensubtitles.Parser();
 
-  describe('serverinfo', function() {
+  describe.skip('serverinfo', function() {
     it('should get server info', function() {
       return parser.getServerInfo()
       .then(function(res) {
@@ -32,7 +33,7 @@ describe('opensubtitles', function() {
     })
   })
 
-  describe('search by hash', function() {
+  describe.skip('search by hash', function() {
     it('should search by hash', function() {
       var link = "http://www.opensubtitles.org/addons/avi/breakdance.avi";
       return parser.searchByHash(link)
@@ -42,15 +43,36 @@ describe('opensubtitles', function() {
     });
   })
 
-  describe.only('search by name', function() {
+  describe('search by name', function() {
     it('should search by name', function() {
-      return parser.searchByName()
+      return parser.searchByName('true detective', '2', '1')
       .then(function(result) {
-        console.log(result.data[0]);
+        console.log(result);
       })
     })
   })
 });
+
+
+describe('opensubtitles.controller', function() {
+
+  this.timeout(90000);
+
+  var controller = new opensubtitles.Controller();
+
+  it('should update serial', function() {
+    return controller.login()
+    .then(function() {
+      return Serial.findOne({url: 'friends'});
+    })
+    .then(function(serial) {
+      return controller.updateSerial(serial);
+    })
+    .then(function(serial) {
+      return serial.save();
+    })
+  })
+})
 
 describe('hash', function() {
 

@@ -34,19 +34,55 @@ class Parser {
     });
   }
 
-  searchByName() {
+  searchByName(name, season, episode) {
     return this.xmlRpc.request('SearchSubtitles', [
       this.token,
       {
         sublanguageid: 'eng',
-        query: 'friends',
-        season: '1',
-        episode: '1'
+        query: name,
+        season: season,
+        episode: episode
       }
     ]);
   }
 
 }
 
+class Controller {
 
-module.exports = {Parser};
+  constructor() {
+    this.parser = new Parser();
+  }
+
+  login() {
+    var parser = this.parser;
+    return this.parser.login()
+    .then(function(result) {
+      parser.token = result.token;
+    });
+  }
+
+  updateEpisode(serial, season, episode) {
+    return this.parser.searchByName(serial.name, season.number.toString(), episode.number.toString())
+    .then(function(result) {
+      if (result.data) {
+        episode.opensubtitles = result.data;
+      }
+    })
+  }
+
+  updateSerial(serial) {
+    var controller = this;
+    var promiseChain = Promise.resolve();
+    for(var season of serial.seasons) {
+      for(var episode of season.episodes) {
+        promiseChain = promiseChain.then(controller.updateEpisode.bind(controller, serial, season, episode));
+      }
+    }
+    return promiseChain.then(function() {
+      return serial;
+    });
+  }
+}
+
+module.exports = {Parser, Controller};

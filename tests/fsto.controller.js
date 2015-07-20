@@ -10,7 +10,7 @@ var assert = chai.assert, expect = chai.expect;
 
 mongoose.connect(config('mongo_url'));
 
-describe('fsto.Controller', function () {
+describe.only('fsto.Controller', function () {
 
   this.timeout(10000);
 
