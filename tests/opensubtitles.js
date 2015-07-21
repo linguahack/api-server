@@ -63,7 +63,7 @@ describe('opensubtitles.controller', function() {
   it('should update serial', function() {
     return controller.login()
     .then(function() {
-      return Serial.findOne({url: 'friends'});
+      return Serial.findOne({url: 'fargo'});
     })
     .then(function(serial) {
       return controller.updateSerial(serial);

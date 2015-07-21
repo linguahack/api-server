@@ -1,7 +1,9 @@
 
 var Serial = require('../models/serial');
-var Fsto = require('../parsers/fsto');
-var fsto = new Fsto.Controller;
+var fsto = require('../parsers/fsto');
+var tmdb = require('../parsers/tmdb');
+var imdb = require('../parsers/imdb');
+var opensubtitles = require('../parsers/opensubtitles');
 
 module.exports =  {
   getSerials: function() {
@@ -32,40 +34,34 @@ module.exports =  {
     });
   },
 
-  editOrCreateSerial: function(serial) {
-    return Promise.resolve(serial.url || 'breaking_bad');
-  },
-
-  fsUpdateLinks: function() {
-    return null;
-    return Serial
-    .find({})
-    .exec()
-    .then(function(docs) {
-      return Promise.all(docs.map(function(serial) {
-        Fsto.updateLinks(serial)
-        .then(function(){
-          return serial.save();
-        })
-      }));
-    });
-  },
-
-  checkFstoVideo: function(serialUrl) {
-    console.log(new Date() + ' -- check fsto video request -- ' + serialUrl);
-    var serial;
-    return Serial
-    .findOne({url: serialUrl})
-    .exec()
-    .then(function(_serial) {
-      serial = _serial;
-      return fsto.updateLinks(serial)
+  createSerial: function(params) {
+    var serial = new Serial();
+    serial.name = params.name;
+    serial.generateUrl();
+    serial.tmdb.id = params.tmdbId;
+    serial.fsto = (new fsto.Parser()).parseUrl(params.fstoUrl);
+    return Promise.resolve()
+    .then(function() {
+      console.log('fsto');
+      return (new fsto.Controller()).updateSerial(serial);
     })
     .then(function() {
-      return serial.save();
+      console.log('tmdb');
+      return (new tmdb.Controller()).updateSerial(serial);
     })
     .then(function() {
-      return serial;
+      console.log('imdb');
+      serial.imdb.id = serial.tmdb.imdb;
+      return (new imdb.Controller()).updateSerial(serial);
+    })
+    .then(function() {
+      console.log('opensubtitles');
+      var controller = new opensubtitles.Controller();
+      return controller.login()
+      .then(controller.updateSerial.bind(controller, serial));
+    })
+    .then(function() {
+      serial.save();
     })
   }
 };
