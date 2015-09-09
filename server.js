@@ -1,35 +1,27 @@
 
-var express = require('express');
-var cors = require('express-cors');
+var app = require('koa')();
+var router = require('koa-router')();
 var mongoose = require('mongoose');
-var config = require('./utils/getConfig');
-var routes = require('./routes');
+var config = require('./config.json');
 
+mongoose.connect(config.mongo_url);
 
-mongoose.connect(config('mongo_url'));
-var server = express();
+app.use(function*(next) {
+  yield next;
+  this.set('Access-Control-Allow-Origin', '*');
+})
 
-// server.use(cors({
-//   allowedOrigins: [
-//     '127.0.0.1:3000',
-//     'localhost:3000',
-//     '52.10.64.218'
-//   ]
-// }));
-
-server.use(function(req, res, next) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  next();
+router.get('/', function *() {
+  this.body = {status: "OK"};
 });
 
-server.get('/', function(req, res) {
-  res.end("it's an api server");
-});
+router.use('/serials', require('./routes/serials').routes());
+router.use('/auth', require('./routes/auth').routes());
 
-server.use('/', routes);
+app.use(router.routes());
 
-port = 3001;
-server.listen(port);
+app.on('error', require('./lib/onerror'));
 
+var port = process.env.PORT || 3001;
+app.listen(port);
 console.log("listening to " + port);
-

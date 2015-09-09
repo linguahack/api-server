@@ -1,6 +1,5 @@
 node_modules
 npm-debug.log
-set_up_variables.sh
 config.json
 *.swp
 
