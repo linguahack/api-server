@@ -8,10 +8,10 @@ var schema = new mongoose.Schema({
     unique: true,
     required: 'login is required'
   },
-  firstName: {
+  firstname: {
     type: String
   },
-  lastName: {
+  lastname: {
     type: String
   },
   password: String

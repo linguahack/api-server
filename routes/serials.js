@@ -12,7 +12,7 @@ router.get('/', function *() {
 })
 
 
-router.get('/id/(:serial)', function *() {
+router.get('/id/:serial', function *() {
   this.body = yield controllers.getSerial(this.params.serial)
 });
 
