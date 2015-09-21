@@ -4,6 +4,7 @@
     "chai": "^2.2.0",
     "cheerio": "^0.18.0",
     "co-body": "^4.0.0",
+    "graphql": "^0.4.4",
     "jsonwebtoken": "^5.0.5",
     "koa": "^1.0.0",
     "koa-router": "^5.1.2",

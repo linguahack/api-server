@@ -18,6 +18,8 @@ router.get('/', function *() {
 router.use('/serials', require('./routes/serials').routes());
 router.use('/auth', require('./routes/auth').routes());
 
+router.use('/graphql', require('./graphql').routes());
+
 app.use(router.routes());
 
 app.on('error', require('./lib/onerror'));
