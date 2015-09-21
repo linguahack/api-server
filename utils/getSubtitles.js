@@ -15,6 +15,9 @@ module.exports = function(subUrl) {
     });
 
     r.on('response', function(response) {
+      if (response.headers['content-length'] < 100) {
+        return reject('invalid subtitiles url');
+      }
       var result = response
       .pipe(zlib.createUnzip())
       .pipe(srt2vtt());
