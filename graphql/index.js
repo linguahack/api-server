@@ -1,17 +1,16 @@
 
 const router = require('koa-router')();
 const parse = require('co-body');
-const graphql = require('graphql');
+const g = require('graphql');
 
 const schema = require('./schema');
 
 router.post('/', function *() {
 
-  const params = yield parse(this);
+  const params = yield parse.json(this);
+  const root = null;
 
-  const result = yield graphql.graphql(schema, params.query);
-
-  this.body = result;
+  this.body = yield g.graphql(schema, params.query, root, params.variables);
 
 });
 

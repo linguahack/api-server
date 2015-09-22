@@ -2,6 +2,7 @@
 
 const g = require('graphql');
 const SeasonType = require('./season');
+const Serial = require('../../models/serial');
 
 module.exports = new g.GraphQLObjectType({
   name: 'Serial',
@@ -12,7 +13,13 @@ module.exports = new g.GraphQLObjectType({
     },
     url: { type: g.GraphQLString },
     name: { type: g.GraphQLString },
-    seasons: { type: new g.GraphQLList(SeasonType) },
+    seasons: {
+      type: new g.GraphQLList(SeasonType),
+      resolve: function(parent) {
+        return Serial.findById(parent._id, 'seasons')
+        .then((serial) => serial.seasons);
+      }
+    },
     tmdb: {
       type: new g.GraphQLObjectType({
         name: 'tmdbSerialData',

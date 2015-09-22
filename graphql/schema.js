@@ -10,7 +10,7 @@ const query = new g.GraphQLObjectType({
     serials: {
       type: new g.GraphQLList(SerialType),
       resolve: function (root, args) {
-        return Serial.find({});
+        return Serial.find({}, "-seasons");
       }
     },
     serial: {
@@ -19,7 +19,7 @@ const query = new g.GraphQLObjectType({
         url: { type: g.GraphQLString }
       },
       resolve: function(root, args) {
-        return Serial.findOne(args);
+        return Serial.findOne(args, '-seasons');
       }
     }
   }
