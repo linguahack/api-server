@@ -1,8 +1,9 @@
 
-var app = require('koa')();
-var router = require('koa-router')();
-var mongoose = require('mongoose');
-var config = require('./config.json');
+const app = require('koa')();
+const router = require('koa-router')();
+const mongoose = require('mongoose');
+const config = require('./config.json');
+const graphql = require('./graphql');
 
 mongoose.connect(config.mongo_url);
 
@@ -15,15 +16,12 @@ router.get('/', function *() {
   this.body = {status: "OK"};
 });
 
-router.use('/serials', require('./routes/serials').routes());
-router.use('/auth', require('./routes/auth').routes());
-
-router.use('/graphql', require('./graphql').routes());
+router.post('/graphql', graphql);
 
 app.use(router.routes());
 
 app.on('error', require('./lib/onerror'));
 
-var port = process.env.PORT || 3001;
+const port = process.env.PORT || 3001;
 app.listen(port);
 console.log("listening to " + port);
